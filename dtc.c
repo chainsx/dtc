@@ -344,6 +344,7 @@ int main(int argc, char *argv[])
 	if (generate_fixups) {
 		generate_fixups_tree(dti, "__fixups__");
 		generate_local_fixups_tree(dti, "__local_fixups__");
+		local_fixup_phandles(dti, "__local_fixups__");
 	}
 
 	if (sort)

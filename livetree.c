@@ -3,6 +3,8 @@
  * (C) Copyright David Gibson <dwg@au1.ibm.com>, IBM Corporation.  2005.
  */
 
+#include <libfdt/libfdt.h>
+
 #include "dtc.h"
 #include "srcpos.h"
 
@@ -1092,4 +1094,60 @@ void generate_local_fixups_tree(struct dt_info *dti, const char *name)
 		return;
 	generate_local_fixups_tree_internal(dti, build_root_node(dti->dt, name),
 					    dti->dt);
+}
+
+static void local_fixup_phandles_node(struct dt_info *dti, struct node *lf, struct node *n)
+{
+	struct property *lfp;
+	struct node *lfsubnode;
+
+	for_each_property(lf, lfp) {
+		struct property *p = get_property(n, lfp->name);
+		size_t i;
+
+		if (!p) {
+			if (quiet < 1)
+				fprintf(stderr, "Warning: Property %s in %s referenced in __local_fixups__ missing\n",
+					lfp->name, n->fullpath);
+			continue;
+		}
+
+		/*
+		 * Each property in the __local_fixup__ tree is a concatination
+		 * of offsets, so it must be a multiple of sizeof(fdt32_t).
+		 */
+		if (lfp->val.len % sizeof(fdt32_t)) {
+			if (quiet < 1)
+				fprintf(stderr, "Warning: property %s in /__local_fixups__%s malformed\n",
+					lfp->name, n->fullpath);
+			continue;
+		}
+
+		for (i = 0; i < lfp->val.len; i += sizeof(fdt32_t))
+			add_phandle_marker(dti, p, fdt32_ld((fdt32_t *)(lfp->val.val + i)));
+	}
+
+	for_each_child(lf, lfsubnode) {
+		struct node *subnode = get_subnode(n, lfsubnode->name);
+
+		if (!subnode) {
+			if (quiet < 1)
+				fprintf(stderr, "Warning: subnode %s in %s referenced in __local_fixups__ missing\n",
+					lfsubnode->name, n->fullpath);
+			continue;
+		}
+
+		local_fixup_phandles_node(dti, lfsubnode, subnode);
+	}
+}
+
+void local_fixup_phandles(struct dt_info *dti, const char *name)
+{
+	struct node *an;
+
+	an = get_subnode(dti->dt, name);
+	if (!an)
+		return;
+
+	local_fixup_phandles_node(dti, an, dti->dt);
 }
