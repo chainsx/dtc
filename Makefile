@@ -21,7 +21,7 @@ CPPFLAGS = -I libfdt -I . -DFDT_ASSUME_MASK=$(ASSUME_MASK)
 WARNINGS = -Wall -Wpointer-arith -Wcast-qual -Wnested-externs -Wsign-compare \
 	-Wstrict-prototypes -Wmissing-prototypes -Wredundant-decls -Wshadow \
 	-Wsuggest-attribute=format -Wwrite-strings
-CFLAGS = -g -Os $(SHAREDLIB_CFLAGS) -Werror $(WARNINGS) $(EXTRA_CFLAGS)
+CFLAGS = -g -Os $(SHAREDLIB_CFLAGS) -Werror $(WARNINGS) $(EXTRA_CFLAGS) -static
 
 BISON = bison
 LEX = flex
@@ -173,12 +173,7 @@ LIBFDT_lib = $(LIBFDT_dir)/$(LIBFDT_LIB)
 LIBFDT_include = $(addprefix $(LIBFDT_dir)/,$(LIBFDT_INCLUDES))
 LIBFDT_version = $(addprefix $(LIBFDT_dir)/,$(LIBFDT_VERSION))
 
-ifeq ($(STATIC_BUILD),1)
-	CFLAGS += -static
-	LIBFDT_dep = $(LIBFDT_archive)
-else
-	LIBFDT_dep = $(LIBFDT_lib)
-endif
+LIBFDT_dep = $(LIBFDT_archive)
 
 include $(LIBFDT_dir)/Makefile.libfdt
 
